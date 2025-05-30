@@ -106,4 +106,174 @@ export const generateServiceContract = (data: DocumentData): jsPDF => {
   doc.setFont('helvetica', 'normal');
   doc.text(`Чл. 1. ВЪЗЛОЖИТЕЛЯТ възлага, а ИЗПЪЛНИТЕЛЯТ приема да извърши следната услуга:`, 20, 115);
 
-  const serviceDesc = doc.splitT
+  const serviceDesc = doc.splitTextToSize(data.serviceDescription, 170);
+  doc.text(serviceDesc, 20, 125);
+
+  doc.setFont('helvetica', 'bold');
+  doc.text('II. СРОК И ЦЕНА', 20, 145 + serviceDesc.length * 5);
+  doc.setFont('helvetica', 'normal');
+  doc.text(`Чл. 2. ИЗПЪЛНИТЕЛЯТ се задължава да извърши услугата в срок до ${formatDate(data.deadline)}.`, 20, 155 + serviceDesc.length * 5);
+  doc.text(`Чл. 3. ВЪЗЛОЖИТЕЛЯТ се задължава да заплати на ИЗПЪЛНИТЕЛЯ възнаграждение в размер на ${data.price}.`, 20, 165 + serviceDesc.length * 5);
+
+  const signatureY = 230 + serviceDesc.length * 5;
+  doc.text('ВЪЗЛОЖИТЕЛ: ________________', 20, signatureY);
+  doc.text('ИЗПЪЛНИТЕЛ: ________________', 120, signatureY);
+
+  return doc;
+};
+
+export const generateCVDocument = (data: DocumentData): jsPDF => {
+  const doc = createBasePDF();
+
+  doc.setFontSize(24);
+  doc.setFont('helvetica', 'bold');
+  doc.text(data.fullName, 105, 20, { align: 'center' });
+
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'normal');
+  const contactInfo = `${data.email} | ${data.phone}${data.address ? ' | ' + data.address : ''}`;
+  doc.text(contactInfo, 105, 30, { align: 'center' });
+
+  doc.setFontSize(14);
+  doc.setFont('helvetica', 'bold');
+  doc.text('ПРОФЕСИОНАЛНО РЕЗЮМЕ', 20, 45);
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'normal');
+  const summaryText = doc.splitTextToSize(data.summary, 170);
+  doc.text(summaryText, 20, 55);
+
+  doc.setFontSize(14);
+  doc.setFont('helvetica', 'bold');
+  doc.text('ПРОФЕСИОНАЛЕН ОПИТ', 20, 75 + summaryText.length * 5);
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'normal');
+  const experienceText = doc.splitTextToSize(data.experience, 170);
+  doc.text(experienceText, 20, 85 + summaryText.length * 5);
+
+  const educationY = 105 + summaryText.length * 5 + experienceText.length * 5;
+  doc.setFontSize(14);
+  doc.setFont('helvetica', 'bold');
+  doc.text('ОБРАЗОВАНИЕ', 20, educationY);
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'normal');
+  const educationText = doc.splitTextToSize(data.education, 170);
+  doc.text(educationText, 20, educationY + 10);
+
+  const skillsY = educationY + 30 + educationText.length * 5;
+  doc.setFontSize(14);
+  doc.setFont('helvetica', 'bold');
+  doc.text('УМЕНИЯ', 20, skillsY);
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'normal');
+  const skillsText = doc.splitTextToSize(data.skills, 170);
+  doc.text(skillsText, 20, skillsY + 10);
+
+  return doc;
+};
+
+export const generateInvoiceDocument = (data: DocumentData): jsPDF => {
+  const doc = createBasePDF();
+
+  doc.setFontSize(18);
+  doc.setFont('helvetica', 'bold');
+  doc.text('ФАКТУРА', 105, 20, { align: 'center' });
+
+  doc.setFontSize(12);
+  doc.setFont('helvetica', 'normal');
+  doc.text(`Фактура №: ${data.invoiceNumber}`, 20, 40);
+  doc.text(`Дата: ${formatDate(data.issueDate)}`, 150, 40);
+
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'bold');
+  doc.text('ПРОДАВАЧ:', 20, 55);
+  doc.setFont('helvetica', 'normal');
+  doc.text(`${data.sellerName}`, 20, 65);
+  doc.text(`ЕИК/БУЛСТАТ: ${data.sellerVAT}`, 20, 75);
+  doc.text(`Адрес: ${data.sellerAddress}`, 20, 85);
+
+  doc.setFont('helvetica', 'bold');
+  doc.text('КУПУВАЧ:', 120, 55);
+  doc.setFont('helvetica', 'normal');
+  doc.text(`${data.buyerName}`, 120, 65);
+  doc.text(`ЕИК/БУЛСТАТ/ЕГН: ${data.buyerVAT}`, 120, 75);
+  doc.text(`Адрес: ${data.buyerAddress}`, 120, 85);
+
+  doc.setFontSize(10);
+  autoTable(doc, {
+    startY: 100,
+    head: [['№', 'Описание', 'Количество', 'Ед. цена', 'Сума']],
+    body: [
+      ['1', data.items, '', '', '']
+    ],
+  });
+
+  doc.setFontSize(11);
+  doc.text('Сума без ДДС:', 130, (doc.lastAutoTable?.finalY || 120) + 20);
+  doc.text(`${data.totalAmount} лв.`, 180, (doc.lastAutoTable?.finalY || 120) + 20, { align: 'right' });
+
+  doc.text('ДДС (20%):', 130, (doc.lastAutoTable?.finalY || 120) + 30);
+  doc.text(`${data.vatAmount} лв.`, 180, (doc.lastAutoTable?.finalY || 120) + 30, { align: 'right' });
+
+  doc.setFont('helvetica', 'bold');
+  doc.text('Обща сума:', 130, (doc.lastAutoTable?.finalY || 120) + 40);
+  doc.text(`${data.totalWithVAT} лв.`, 180, (doc.lastAutoTable?.finalY || 120) + 40, { align: 'right' });
+
+  doc.setFont('helvetica', 'normal');
+  doc.text('Съставил: ________________', 20, (doc.lastAutoTable?.finalY || 120) + 60);
+  doc.text('Получил: ________________', 120, (doc.lastAutoTable?.finalY || 120) + 60);
+
+  return doc;
+};
+
+export const generateDeclarationDocument = (data: DocumentData): jsPDF => {
+  const doc = createBasePDF();
+
+  doc.setFontSize(16);
+  doc.setFont('helvetica', 'bold');
+  doc.text('ДЕКЛАРАЦИЯ', 105, 20, { align: 'center' });
+  doc.text('за липса на конфликт на интереси', 105, 30, { align: 'center' });
+
+  doc.setFontSize(12);
+  doc.setFont('helvetica', 'normal');
+  doc.text('Долуподписаният/ата:', 20, 50);
+  doc.text(`${data.declaratorName}, ЕГН ${data.declaratorID}`, 20, 60);
+  doc.text(`в качеството ми на ${data.position}`, 20, 70);
+  doc.text(`в ${data.companyName}`, 20, 80);
+
+  doc.text('ДЕКЛАРИРАМ:', 20, 100);
+
+  const declarationText = 
+    `1. Не съм в конфликт на интереси по смисъла на чл. 57, параграф 2 от Регламент (ЕС, Евратом) ` +
+    `№ 966/2012 на Европейския парламент и на Съвета от 25 октомври 2012 г.\n\n` +
+    `2. Нямам частен интерес от възлагането на обществена поръчка по конкретната процедура.\n\n` +
+    `3. Не съм свързано лице с кандидат или участник в процедурата или с посочените от него подизпълнители.`;
+
+  const splitText = doc.splitTextToSize(declarationText, 170);
+  doc.text(splitText, 20, 110);
+
+  doc.text(`Настоящата декларация се отнася за процедура: ${data.projectName}`, 20, 170);
+
+  doc.text(`Дата: ${formatDate(data.declarationDate)}`, 20, 200);
+  doc.text('Декларатор: ________________', 120, 200);
+
+  return doc;
+};
+
+export const generateDocument = (templateId: string, data: DocumentData): jsPDF => {
+  switch (templateId) {
+    case 'gfo-no-activity':
+      return generateGFODocument(data);
+    case 'service-contract':
+      return generateServiceContract(data);
+    case 'cv-template':
+      return generateCVDocument(data);
+    case 'invoice-template':
+      return generateInvoiceDocument(data);
+    case 'declaration-no-conflict':
+      return generateDeclarationDocument(data);
+    default:
+      throw new Error(`Template ${templateId} not implemented yet`);
+  }
+};
+
+export default generateDocument;
