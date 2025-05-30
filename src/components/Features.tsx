@@ -13,17 +13,17 @@ interface FeatureCardProps {
 const FeatureCard: React.FC<FeatureCardProps> = ({ icon, title, description, delay = 0 }) => {
   return (
     <motion.div 
-      className="bg-white rounded-lg shadow-md hover:shadow-lg transition-all duration-normal hover-lift"
+      className="bg-white rounded-2xl shadow-xl p-6 hover:shadow-2xl transition-all"
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       transition={{ duration: 0.5, delay }}
     >
-      <div className="bg-electric-blue/10 text-electric-blue p-3 rounded-lg inline-block mb-4">
+      <div className="bg-primary-light/10 text-primary p-3 rounded-lg inline-block mb-4">
         {icon}
       </div>
-      <h3 className="text-xl font-semibold font-accent text-dark-blue mb-2">{title}</h3>
-      <p className="text-dark-gray">{description}</p>
+      <h3 className="text-xl font-bold text-gray-800 mb-2">{title}</h3>
+      <p className="text-gray-600">{description}</p>
     </motion.div>
   );
 };
@@ -87,7 +87,7 @@ const Features = () => {
   ];
 
   return (
-    <section className="py-20 bg-light-gray">
+    <section className="py-20 bg-gray-50">
       <div className="container mx-auto px-4">
         <motion.div 
           className="text-center mb-16"
@@ -96,8 +96,8 @@ const Features = () => {
           viewport={{ once: true }}
           transition={{ duration: 0.5 }}
         >
-          <h2 className="text-3xl md:text-4xl font-bold font-accent text-dark-blue mb-4">Всичко, от което се нуждаете</h2>
-          <p className="text-xl text-dark-gray max-w-3xl mx-auto">
+          <h2 className="text-3xl md:text-4xl font-bold text-gray-800 mb-4">Всичко, от което се нуждаете</h2>
+          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
             СчетоBot предлага пълен набор от инструменти за автоматизация на вашите счетоводни задачи,
             спестявайки ви време и пари.
           </p>
