@@ -23,7 +23,7 @@ export default function Home() {
       <TaxCalendar />
       <PaymentSystem />
       <HowItWorks />
-      <SubmissionInstruction />
+      <SubmissionInstruction documentType="invoice" />
       <UserGuide />
       <Footer />
       <AdvancedChatbot />
