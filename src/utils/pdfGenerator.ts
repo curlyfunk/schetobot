@@ -1,5 +1,4 @@
 import { jsPDF } from 'jspdf';
-import 'jspdf-autotable';
 import autoTable from 'jspdf-autotable';
 
 interface DocumentData {
@@ -19,7 +18,6 @@ const formatDate = (dateString: string): string => {
   return `${day}.${month}.${year}`;
 };
 
-// Base PDF generator with common settings
 const createBasePDF = (): jsPDFWithPlugin => {
   const doc = new jsPDF() as jsPDFWithPlugin;
   doc.setFont('helvetica');
@@ -27,7 +25,6 @@ const createBasePDF = (): jsPDFWithPlugin => {
   return doc;
 };
 
-// Generate GFO for company without activity
 export const generateGFODocument = (data: DocumentData): jsPDF => {
   const doc = createBasePDF();
 
@@ -46,7 +43,6 @@ export const generateGFODocument = (data: DocumentData): jsPDF => {
   doc.text(`Адрес: ${data.address}`, 30, 90);
   doc.text(`Управител: ${data.managerName}`, 30, 100);
 
-  doc.setFontSize(12);
   doc.text('ДЕКЛАРАЦИЯ', 105, 120, { align: 'center' });
 
   const declarationText = 
@@ -88,4 +84,26 @@ export const generateGFODocument = (data: DocumentData): jsPDF => {
   return doc;
 };
 
-// Останалата част от файла не изисква промяна, защото не ползва `lastAutoTable`
+export const generateServiceContract = (data: DocumentData): jsPDF => {
+  const doc = createBasePDF();
+
+  doc.setFontSize(16);
+  doc.setFont('helvetica', 'bold');
+  doc.text('ДОГОВОР ЗА ПРЕДОСТАВЯНЕ НА УСЛУГИ', 105, 20, { align: 'center' });
+
+  doc.setFontSize(12);
+  doc.setFont('helvetica', 'normal');
+  doc.text(`Днес, ${formatDate(data.deadline) || '________________'} г., в гр. София, между:`, 20, 40);
+
+  doc.text(`1. ${data.providerName}, с ЕИК/БУЛСТАТ/ЕГН ${data.providerID}, наричан/а за краткост ИЗПЪЛНИТЕЛ, от една страна`, 20, 55);
+  doc.text('и', 20, 65);
+  doc.text(`2. ${data.clientName}, с ЕИК/БУЛСТАТ/ЕГН ${data.clientID}, наричан/а за краткост ВЪЗЛОЖИТЕЛ, от друга страна,`, 20, 75);
+
+  doc.text('се сключи настоящият договор за следното:', 20, 90);
+
+  doc.setFont('helvetica', 'bold');
+  doc.text('I. ПРЕДМЕТ НА ДОГОВОРА', 20, 105);
+  doc.setFont('helvetica', 'normal');
+  doc.text(`Чл. 1. ВЪЗЛОЖИТЕЛЯТ възлага, а ИЗПЪЛНИТЕЛЯТ приема да извърши следната услуга:`, 20, 115);
+
+  const serviceDesc = doc.splitT
