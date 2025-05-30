@@ -9,13 +9,13 @@ module.exports = {
     extend: {
       colors: {
         primary: {
-          DEFAULT: '#3b82f6',
-          light: '#60a5fa',
-          dark: '#2563eb',
+          DEFAULT: '#7B61FF',     // Основен лилав
+          light: '#9F8BFF',       // По-светъл лилав
+          dark: '#1D1A31',        // Почти черно за заглавия
         },
-        secondary: '#10b981',
-        'dark-gray': '#4b5563',
-        'light-gray': '#f9fafb',
+        secondary: '#E9E5FF',     // Фон на карти
+        'dark-gray': '#4b5563',   // Може да се ползва или премахне
+        'light-gray': '#f9fafb',  // Може да се ползва или премахне
       },
       backgroundImage: {
         'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
