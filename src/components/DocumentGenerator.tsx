@@ -1,8 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import generateDocument from '@/utils/pdfGenerator';
 
 interface DocumentTemplate {
   id: string;
@@ -25,26 +24,8 @@ const DocumentGenerator = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTemplate, setSelectedTemplate] = useState<DocumentTemplate | null>(null);
   const [formData, setFormData] = useState<Record<string, string>>({});
-  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [generatingDocument, setGeneratingDocument] = useState(false);
   const [documentGenerated, setDocumentGenerated] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
-  const [documentUrl, setDocumentUrl] = useState<string | null>(null);
-  const formRef = useRef<HTMLDivElement>(null);
-  
-  // Check if device is mobile
-  useEffect(() => {
-    const checkIfMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-    
-    checkIfMobile();
-    window.addEventListener('resize', checkIfMobile);
-    
-    return () => {
-      window.removeEventListener('resize', checkIfMobile);
-    };
-  }, []);
   
   // Document templates
   const templates: DocumentTemplate[] = [
@@ -215,106 +196,28 @@ const DocumentGenerator = () => {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { id, value } = e.target;
     setFormData(prev => ({ ...prev, [id]: value }));
-    
-    // Clear error for this field if it exists
-    if (formErrors[id]) {
-      setFormErrors(prev => {
-        const newErrors = { ...prev };
-        delete newErrors[id];
-        return newErrors;
-      });
-    }
-  };
-  
-  // Validate form
-  const validateForm = (): boolean => {
-    if (!selectedTemplate) return false;
-    
-    const newErrors: Record<string, string> = {};
-    let isValid = true;
-    
-    selectedTemplate.fields.forEach(field => {
-      if (field.required && (!formData[field.id] || formData[field.id].trim() === '')) {
-        newErrors[field.id] = 'Това поле е задължително';
-        isValid = false;
-      }
-    });
-    
-    setFormErrors(newErrors);
-    
-    // Scroll to first error on mobile
-    if (!isValid && isMobile && formRef.current) {
-      setTimeout(() => {
-        const firstErrorField = document.querySelector('[aria-invalid="true"]');
-        if (firstErrorField) {
-          firstErrorField.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          (firstErrorField as HTMLElement).focus();
-        }
-      }, 100);
-    }
-    
-    return isValid;
   };
   
   // Handle document generation
   const handleGenerateDocument = () => {
-    if (!validateForm() || !selectedTemplate) {
-      return;
-    }
-    
     setGeneratingDocument(true);
     
-    try {
-      // Generate PDF document
-      setTimeout(() => {
-        const doc = generateDocument(selectedTemplate.id, formData);
-        
-        // Save the PDF
-        const pdfBlob = doc.output('blob');
-        const pdfUrl = URL.createObjectURL(pdfBlob);
-        setDocumentUrl(pdfUrl);
-        setGeneratingDocument(false);
-        setDocumentGenerated(true);
-      }, 1000);
-    } catch (error) {
-      console.error('Error generating document:', error);
+    // Simulate document generation
+    setTimeout(() => {
       setGeneratingDocument(false);
-      alert('Възникна грешка при генерирането на документа. Моля, опитайте отново.');
-    }
+      setDocumentGenerated(true);
+    }, 2000);
   };
   
   // Reset form and go back to template selection
   const handleReset = () => {
     setSelectedTemplate(null);
     setFormData({});
-    setFormErrors({});
     setDocumentGenerated(false);
-    setDocumentUrl(null);
-  };
-  
-  // Download generated document
-  const handleDownloadDocument = () => {
-    if (documentUrl && selectedTemplate) {
-      const link = document.createElement('a');
-      link.href = documentUrl;
-      link.download = `${selectedTemplate.title.replace(/\s+/g, '-').toLowerCase()}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    }
-  };
-  
-  // Send document via email
-  const handleEmailDocument = () => {
-    if (documentUrl && selectedTemplate) {
-      // In a real implementation, this would send the document to a server endpoint
-      // that would handle the email sending with the attachment
-      alert('Функцията за изпращане по имейл ще бъде налична скоро!');
-    }
   };
   
   return (
-    <section className="py-16 bg-light-gray">
+    <section className="py-16 bg-gray-50">
       <div className="container mx-auto px-4">
         <motion.div 
           className="text-center mb-12"
@@ -323,8 +226,8 @@ const DocumentGenerator = () => {
           viewport={{ once: true }}
           transition={{ duration: 0.5 }}
         >
-          <h2 className="text-3xl md:text-4xl font-bold font-accent text-dark-blue mb-4">Генератор на документи</h2>
-          <p className="text-xl text-dark-gray max-w-3xl mx-auto">
+          <h2 className="text-3xl md:text-4xl font-bold text-gray-800 mb-4">Генератор на документи</h2>
+          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
             Създайте професионални документи за минути. Изберете шаблон, попълнете данните и изтеглете готовия документ.
           </p>
         </motion.div>
@@ -335,19 +238,16 @@ const DocumentGenerator = () => {
             <div className="max-w-6xl mx-auto mb-8">
               <div className="flex flex-col md:flex-row justify-between items-center mb-6">
                 {/* Category filter */}
-                <div className="flex flex-wrap gap-2 mb-4 md:mb-0" role="tablist" aria-label="Категории документи">
+                <div className="flex flex-wrap gap-2 mb-4 md:mb-0">
                   {categories.map(category => (
                     <button
                       key={category.id}
                       onClick={() => setSelectedCategory(category.id)}
                       className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
                         selectedCategory === category.id
-                          ? 'bg-electric-blue text-white'
-                          : 'bg-white text-dark-gray hover:bg-gray-100'
+                          ? 'bg-primary text-white'
+                          : 'bg-white text-gray-600 hover:bg-gray-100'
                       }`}
-                      role="tab"
-                      aria-selected={selectedCategory === category.id}
-                      aria-controls={`category-${category.id}`}
                     >
                       {category.name}
                     </button>
@@ -362,8 +262,7 @@ const DocumentGenerator = () => {
                       placeholder="Търсене на шаблони..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full md:w-64 px-4 py-2 pl-10 rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-electric-blue focus:border-transparent"
-                      aria-label="Търсене на шаблони"
+                      className="w-full md:w-64 bg-white rounded-full px-4 py-2 pl-10 focus:outline-none focus:ring-2 focus:ring-primary"
                     />
                     <svg
                       className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
@@ -384,326 +283,10 @@ const DocumentGenerator = () => {
               </div>
               
               {/* Templates grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" role="tabpanel" id={`category-${selectedCategory}`}>
-                {filteredTemplates.length > 0 ? (
-                  filteredTemplates.map((template, index) => (
-                    <motion.div
-                      key={template.id}
-                      initial={{ opacity: 0, y: 20 }}
-                      whileInView={{ opacity: 1, y: 0 }}
-                      viewport={{ once: true }}
-                      transition={{ duration: 0.3, delay: index * 0.1 }}
-                      whileHover={{ y: -5 }}
-                      className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-all duration-300"
-                    >
-                      <div className="p-6">
-                        <h3 className="text-xl font-semibold font-accent text-dark-blue mb-2">{template.title}</h3>
-                        <p className="text-dark-gray mb-4">{template.description}</p>
-                        <div className="flex justify-between items-center">
-                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                            template.isPremium ? 'bg-gold/10 text-gold' : 'bg-electric-blue/10 text-electric-blue'
-                          }`}>
-                            {template.isPremium ? 'Премиум' : 'Безплатен'}
-                          </span>
-                          <button
-                            onClick={() => {
-                              setSelectedTemplate(template);
-                              setFormData({});
-                              setFormErrors({});
-                            }}
-                            className="px-4 py-2 bg-electric-blue text-white rounded-md hover:bg-electric-blue-dark transition-colors"
-                            aria-label={`Избери шаблон ${template.title}`}
-                          >
-                            Избери
-                          </button>
-                        </div>
-                      </div>
-                    </motion.div>
-                  ))
-                ) : (
-                  <div className="col-span-full text-center py-12">
-                    <svg
-                      className="mx-auto h-12 w-12 text-gray-400"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      aria-hidden="true"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                      />
-                    </svg>
-                    <h3 className="mt-2 text-lg font-medium text-dark-blue">Няма намерени шаблони</h3>
-                    <p className="mt-1 text-dark-gray">
-                      Опитайте с друга категория или ключова дума.
-                    </p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </>
-        ) : (
-          <>
-            {/* Document form */}
-            <div className="max-w-3xl mx-auto">
-              <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-                <div className="flex justify-between items-center mb-6">
-                  <h3 className="text-xl font-semibold font-accent text-dark-blue">{selectedTemplate.title}</h3>
-                  <button
-                    onClick={handleReset}
-                    className="text-electric-blue hover:text-electric-blue-dark transition-colors"
-                    aria-label="Върни се към избор на шаблон"
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-5 w-5"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  </button>
-                </div>
-                
-                {documentGenerated ? (
-                  <div className="text-center py-8">
-                    <div className="mb-6">
-                      <svg
-                        className="mx-auto h-12 w-12 text-green-500"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                        aria-hidden="true"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          d="M5 13l4 4L19 7"
-                        />
-                      </svg>
-                      <h3 className="mt-2 text-lg font-medium text-dark-blue">Документът е готов!</h3>
-                      <p className="mt-1 text-dark-gray">
-                        Вашият документ беше успешно генериран и е готов за изтегляне.
-                      </p>
-                    </div>
-                    
-                    {documentUrl && (
-                      <div className="mb-6">
-                        <iframe
-                          src={documentUrl}
-                          className="w-full h-96 border border-gray-300 rounded-lg"
-                          title="Преглед на документ"
-                        />
-                      </div>
-                    )}
-                    
-                    <div className="flex flex-col sm:flex-row justify-center gap-4">
-                      <button
-                        onClick={handleDownloadDocument}
-                        className="px-6 py-3 bg-electric-blue text-white rounded-md hover:bg-electric-blue-dark transition-colors flex items-center justify-center"
-                        aria-label="Изтегли документ"
-                      >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="h-5 w-5 mr-2"
-                          viewBox="0 0 20 20"
-                          fill="currentColor"
-                        >
-                          <path
-                            fillRule="evenodd"
-                            d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z"
-                            clipRule="evenodd"
-                          />
-                        </svg>
-                        Изтегли PDF
-                      </button>
-                      <button
-                        onClick={handleEmailDocument}
-                        className="px-6 py-3 bg-white border border-electric-blue text-electric-blue rounded-md hover:bg-electric-blue/5 transition-colors flex items-center justify-center"
-                        aria-label="Изпрати по имейл"
-                      >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="h-5 w-5 mr-2"
-                          viewBox="0 0 20 20"
-                          fill="currentColor"
-                        >
-                          <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
-                          <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
-                        </svg>
-                        Изпрати по имейл
-                      </button>
-                      <button
-                        onClick={handleReset}
-                        className="px-6 py-3 bg-white border border-gray-300 text-dark-gray rounded-md hover:bg-gray-50 transition-colors flex items-center justify-center"
-                        aria-label="Създай нов документ"
-                      >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="h-5 w-5 mr-2"
-                          viewBox="0 0 20 20"
-                          fill="currentColor"
-                        >
-                          <path
-                            fillRule="evenodd"
-                            d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
-                            clipRule="evenodd"
-                          />
-                        </svg>
-                        Нов документ
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div ref={formRef}>
-                    <form onSubmit={(e) => { e.preventDefault(); handleGenerateDocument(); }}>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {selectedTemplate.fields.map(field => (
-                          <div
-                            key={field.id}
-                            className={field.type === 'textarea' ? 'col-span-full' : ''}
-                          >
-                            <label
-                              htmlFor={field.id}
-                              className="block text-dark-gray font-medium mb-1"
-                            >
-                              {field.label}
-                              {field.required && <span className="text-red-500 ml-1">*</span>}
-                            </label>
-                            
-                            {field.type === 'textarea' ? (
-                              <textarea
-                                id={field.id}
-                                value={formData[field.id] || ''}
-                                onChange={handleInputChange}
-                                placeholder={field.placeholder}
-                                className={`w-full px-4 py-2 rounded-md border ${
-                                  formErrors[field.id]
-                                    ? 'border-red-500 focus:ring-red-500'
-                                    : 'border-gray-300 focus:ring-electric-blue'
-                                } focus:outline-none focus:ring-2 focus:border-transparent transition-colors`}
-                                rows={4}
-                                aria-invalid={!!formErrors[field.id]}
-                                aria-describedby={formErrors[field.id] ? `${field.id}-error` : undefined}
-                              />
-                            ) : field.type === 'select' ? (
-                              <select
-                                id={field.id}
-                                value={formData[field.id] || ''}
-                                onChange={handleInputChange}
-                                className={`w-full px-4 py-2 rounded-md border ${
-                                  formErrors[field.id]
-                                    ? 'border-red-500 focus:ring-red-500'
-                                    : 'border-gray-300 focus:ring-electric-blue'
-                                } focus:outline-none focus:ring-2 focus:border-transparent transition-colors`}
-                                aria-invalid={!!formErrors[field.id]}
-                                aria-describedby={formErrors[field.id] ? `${field.id}-error` : undefined}
-                              >
-                                <option value="">Изберете...</option>
-                                {field.options?.map(option => (
-                                  <option key={option} value={option}>
-                                    {option}
-                                  </option>
-                                ))}
-                              </select>
-                            ) : (
-                              <input
-                                id={field.id}
-                                type={field.type}
-                                value={formData[field.id] || ''}
-                                onChange={handleInputChange}
-                                placeholder={field.placeholder}
-                                className={`w-full px-4 py-2 rounded-md border ${
-                                  formErrors[field.id]
-                                    ? 'border-red-500 focus:ring-red-500'
-                                    : 'border-gray-300 focus:ring-electric-blue'
-                                } focus:outline-none focus:ring-2 focus:border-transparent transition-colors`}
-                                aria-invalid={!!formErrors[field.id]}
-                                aria-describedby={formErrors[field.id] ? `${field.id}-error` : undefined}
-                              />
-                            )}
-                            
-                            {formErrors[field.id] && (
-                              <p
-                                id={`${field.id}-error`}
-                                className="mt-1 text-sm text-red-500"
-                                role="alert"
-                              >
-                                {formErrors[field.id]}
-                              </p>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                      
-                      <div className="mt-8 flex justify-center">
-                        <button
-                          type="submit"
-                          className="px-6 py-3 bg-electric-blue text-white rounded-md hover:bg-electric-blue-dark transition-colors flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
-                          disabled={generatingDocument}
-                          aria-busy={generatingDocument}
-                        >
-                          {generatingDocument ? (
-                            <>
-                              <svg
-                                className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-                                xmlns="http://www.w3.org/2000/svg"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                              >
-                                <circle
-                                  className="opacity-25"
-                                  cx="12"
-                                  cy="12"
-                                  r="10"
-                                  stroke="currentColor"
-                                  strokeWidth="4"
-                                ></circle>
-                                <path
-                                  className="opacity-75"
-                                  fill="currentColor"
-                                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                                ></path>
-                              </svg>
-                              Генериране...
-                            </>
-                          ) : (
-                            <>
-                              <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                className="h-5 w-5 mr-2"
-                                viewBox="0 0 20 20"
-                                fill="currentColor"
-                              >
-                                <path
-                                  fillRule="evenodd"
-                                  d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V7.414A2 2 0 0015.414 6L12 2.586A2 2 0 0010.586 2H6zm5 6a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V8z"
-                                  clipRule="evenodd"
-                                />
-                              </svg>
-                              Генерирай документ
-                            </>
-                          )}
-                        </button>
-                      </div>
-                    </form>
-                  </div>
-                )}
-              </div>
-            </div>
-          </>
-        )}
-      </div>
-    </section>
-  );
-};
-
-export default DocumentGenerator;
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredTemplates.map((template, index) => (
+                  <motion.div
+                    key={template.id}
+                    initial={{ opacity: 0, y: 20 }}
+            
+(Content truncated due to size limit. Use line ranges to read in chunks)
