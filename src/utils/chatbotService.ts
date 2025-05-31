@@ -104,8 +104,11 @@ export const loadChatHistory = (): ChatMessage[] => {
   ];
 };
 
-export default {
+// Create a named object for export
+const chatbotService = {
   processMessage,
   saveChatHistory,
   loadChatHistory
 };
+
+export default chatbotService;

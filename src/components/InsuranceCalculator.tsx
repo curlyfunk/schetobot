@@ -37,7 +37,7 @@ const InsuranceCalculator: React.FC<InsuranceCalculatorProps> = ({ className }) 
   // Calculate insurance amounts when inputs change
   useEffect(() => {
     calculateInsurance();
-  }, [monthlyIncome, birthYear, isRegisteredByDDS, hasMainEmployment]);
+  }, [monthlyIncome, birthYear, isRegisteredByDDS, hasMainEmployment, calculateInsurance]);
   
   // Calculate insurance amounts
   const calculateInsurance = () => {
