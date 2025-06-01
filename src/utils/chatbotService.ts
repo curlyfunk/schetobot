@@ -1,114 +1,188 @@
-// API service for AI chatbot
-// This is a mock implementation for MVP - will be replaced with actual AI model integration later
+'use client';
 
-interface ChatMessage {
-  id: string;
-  type: 'user' | 'bot';
-  text: string;
-  timestamp: Date;
+import axios from 'axios';
+
+// Типове за чатбот заявки и отговори
+export interface ChatMessage {
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp?: Date;
 }
 
-// Knowledge base for common accounting questions
-const knowledgeBase = [
-  {
-    keywords: ['здравей', 'привет', 'здрасти', 'добър ден'],
-    response: 'Здравейте! Аз съм СчетоBot - вашият AI счетоводен асистент. Как мога да ви помогна с вашите счетоводни въпроси днес?'
-  },
-  {
-    keywords: ['гфо', 'годишен финансов отчет', 'годишен отчет'],
-    response: 'Годишният финансов отчет (ГФО) трябва да бъде подаден до 31 март на следващата година. За фирми без дейност можете да използвате нашия генератор на документи, за да създадете необходимите документи автоматично. Документите се подават чрез портала на НАП с квалифициран електронен подпис (КЕП).'
-  },
-  {
-    keywords: ['осигуровк', 'осигурителен доход', 'осигурителни вноски'],
-    response: 'За самоосигуряващи се лица, минималният осигурителен доход за 2025 г. е 1000 лв. Осигурителните вноски включват: 19.8% за ДОО, 8% за здравно осигуряване и 5% за ДЗПО (ако сте родени след 1959 г.). Вноските се внасят до 25-то число на месеца, следващ месеца, за който се отнасят. Нашият калкулатор на осигуровки може да ви помогне с точните изчисления.'
-  },
-  {
-    keywords: ['ддс', 'данък добавена стойност', 'регистрация по ддс'],
-    response: 'Регистрацията по ДДС е задължителна при достигане на оборот от 100,000 лв. за период от 12 последователни месеца. Справка-декларацията по ДДС се подава до 14-то число на месеца, следващ данъчния период. Ставката на ДДС в България е 20%, с намалена ставка от 9% за някои туристически услуги и 0% за износ.'
-  },
-  {
-    keywords: ['фактура', 'издаване на фактура', 'фактури'],
-    response: 'Фактурите трябва да съдържат: номер, дата на издаване, данни за продавача и купувача (име, адрес, ЕИК/БУЛСТАТ), описание на стоките/услугите, количество, единична цена, обща стойност, ДДС (ако е приложимо). Можете да използвате нашия генератор на документи, за да създадете професионални фактури. Фактурите трябва да се съхраняват минимум 5 години.'
-  },
-  {
-    keywords: ['срок', 'краен срок', 'срокове', 'дата'],
-    response: 'Основни срокове за 2025 г.:\n- Подаване на ГФО: 31 март\n- Внасяне на авансов корпоративен данък: 15 април, 15 юни, 15 септември, 15 декември\n- Подаване на годишна данъчна декларация за физически лица: 30 април\n- Внасяне на осигуровки за самоосигуряващи се: до 25-то число на месеца, следващ месеца, за който се отнасят\n- Подаване на справка-декларация по ДДС: до 14-то число на месеца, следващ данъчния период'
-  },
-  {
-    keywords: ['данъ', 'данъчна декларация', 'данъчно облагане', 'корпоративен данък', 'данък печалба'],
-    response: 'Основните данъци в България включват: корпоративен данък (10%), данък върху доходите на физическите лица (10% плосък данък), ДДС (20%), данък върху дивидентите (5%). Годишната данъчна декларация за юридически лица се подава до 31 март, а за физически лица - до 30 април на следващата година. Авансовият корпоративен данък се внася на четири вноски през годината.'
-  },
-  {
-    keywords: ['самоосигуряващ', 'самоосигуряващо се лице', 'еднолично дружество', 'ет', 'еоод'],
-    response: 'Самоосигуряващите се лица (ЕТ, свободни професии, едноличните собственици на ЕООД) трябва да внасят осигуровки върху избран от тях месечен доход между минималния (1000 лв. за 2025 г.) и максималния осигурителен доход (3500 лв. за 2025 г.). Вноските включват ДОО, здравно осигуряване и ДЗПО (за родените след 1959 г.). Декларация образец 1 се подава до 25-то число на месеца, следващ месеца, за който се отнасят осигуровките.'
-  },
-  {
-    keywords: ['трудов договор', 'назначаване', 'служител', 'наемане'],
-    response: 'При сключване на трудов договор, работодателят трябва да регистрира договора в НАП в срок от 3 дни от подписването му. Минималната работна заплата за 2025 г. е 1050 лв. Осигурителните вноски се разпределят между работодател и служител, като работодателят внася по-голямата част. Можете да използвате нашия генератор на документи, за да създадете стандартен трудов договор.'
-  },
-  {
-    keywords: ['граждански договор', 'хонорар', 'извънтрудови правоотношения'],
-    response: 'Гражданските договори (договори за извънтрудови правоотношения) подлежат на облагане с данък върху доходите (10%) и осигурителни вноски. За лица, които имат основен трудов договор другаде, се дължат само здравни осигуровки (8%) и данък. За останалите се дължат пълни осигуровки. Авансовият данък (10%) се удържа и внася от възложителя до 25-то число на месеца, следващ месеца на изплащане.'
-  },
-  {
-    keywords: ['амортизация', 'амортизационен план', 'дма', 'дълготрайни активи'],
-    response: 'Амортизацията е процес на разпределяне на стойността на дълготрайните материални и нематериални активи като разход за периода на полезния им живот. За данъчни цели се прилагат годишни амортизационни норми: 4% за масивни сгради, 30% за компютри, 15% за машини и оборудване, 25% за автомобили. Активи с цена под 1500 лв. могат да се отчетат директно като разход.'
-  },
-  {
-    keywords: ['благодар', 'мерси'],
-    response: 'За мен е удоволствие да помогна! Имате ли други въпроси относно счетоводството или данъчното законодателство?'
-  }
-];
+export interface ChatSession {
+  id: string;
+  messages: ChatMessage[];
+  createdAt: Date;
+  updatedAt: Date;
+}
 
-// Process user message and generate response
-export const processMessage = (userMessage: string): string => {
-  const userText = userMessage.toLowerCase();
-  
-  // Check for matches in knowledge base
-  for (const item of knowledgeBase) {
-    if (item.keywords.some(keyword => userText.includes(keyword))) {
-      return item.response;
+// Конфигурация на API
+const API_ENDPOINT = process.env.NEXT_PUBLIC_CHATBOT_API_URL || 'https://api.e-doc.bg/chatbot';
+const RUNPOD_ENDPOINT = process.env.NEXT_PUBLIC_RUNPOD_ENDPOINT || 'https://api.runpod.ai/v2/e-doc-chatbot/run';
+const API_KEY = process.env.NEXT_PUBLIC_CHATBOT_API_KEY || '';
+
+// Основен клас за чатбот услугата
+export class ChatbotService {
+  private session: ChatSession | null = null;
+
+  constructor() {
+    // Инициализиране на сесия от localStorage, ако има такава
+    this.loadSession();
+  }
+
+  // Зареждане на сесия от localStorage
+  private loadSession(): void {
+    if (typeof window !== 'undefined') {
+      const savedSession = localStorage.getItem('chatSession');
+      if (savedSession) {
+        try {
+          this.session = JSON.parse(savedSession);
+        } catch (error) {
+          console.error('Грешка при зареждане на чат сесия:', error);
+          this.createNewSession();
+        }
+      } else {
+        this.createNewSession();
+      }
     }
   }
-  
-  // Default response if no match found
-  return 'Благодаря за въпроса. В момента разполагам с базова информация за счетоводни и данъчни въпроси. Можете да ме питате за ГФО, осигуровки, ДДС, фактури, данъци и срокове за подаване на документи. В бъдеще ще бъда обучен с по-подробна информация.';
-};
 
-// Save chat history (mock implementation for MVP)
-export const saveChatHistory = (messages: ChatMessage[]): void => {
-  // In a real implementation, this would save to a database
-  localStorage.setItem('chatHistory', JSON.stringify(messages));
-};
+  // Създаване на нова сесия
+  private createNewSession(): void {
+    this.session = {
+      id: this.generateSessionId(),
+      messages: [],
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    this.saveSession();
+  }
 
-// Load chat history (mock implementation for MVP)
-export const loadChatHistory = (): ChatMessage[] => {
-  // In a real implementation, this would load from a database
-  const savedHistory = localStorage.getItem('chatHistory');
-  if (savedHistory) {
-    try {
-      return JSON.parse(savedHistory);
-    } catch (error) {
-      console.error('Error parsing chat history:', error);
+  // Генериране на уникален ID за сесия
+  private generateSessionId(): string {
+    return 'session_' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+  }
+
+  // Запазване на сесията в localStorage
+  private saveSession(): void {
+    if (typeof window !== 'undefined' && this.session) {
+      localStorage.setItem('chatSession', JSON.stringify(this.session));
     }
   }
-  
-  // Default initial message
-  return [
-    {
-      id: '1',
-      type: 'bot',
-      text: 'Здравейте! Аз съм СчетоBot - вашият AI счетоводен асистент. Как мога да ви помогна днес?',
+
+  // Добавяне на съобщение към сесията
+  public addMessage(message: ChatMessage): void {
+    if (!this.session) {
+      this.createNewSession();
+    }
+    
+    message.timestamp = new Date();
+    this.session!.messages.push(message);
+    this.session!.updatedAt = new Date();
+    this.saveSession();
+  }
+
+  // Изпращане на съобщение към AI и получаване на отговор
+  public async sendMessage(content: string): Promise<ChatMessage> {
+    if (!content.trim()) {
+      throw new Error('Съобщението не може да бъде празно');
+    }
+
+    // Добавяне на съобщението на потребителя към сесията
+    const userMessage: ChatMessage = {
+      role: 'user',
+      content,
       timestamp: new Date()
+    };
+    this.addMessage(userMessage);
+
+    try {
+      // Подготовка на контекста за AI модела
+      const context = this.prepareContext();
+      
+      // Изпращане на заявка към Runpod serverless endpoint
+      const response = await axios.post(RUNPOD_ENDPOINT, {
+        input: {
+          messages: context,
+          max_tokens: 1000,
+          temperature: 0.7,
+          stream: false
+        }
+      }, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${API_KEY}`
+        }
+      });
+
+      // Обработка на отговора
+      if (response.data && response.data.output) {
+        const assistantMessage: ChatMessage = {
+          role: 'assistant',
+          content: response.data.output.text || 'Извинете, не успях да генерирам отговор.',
+          timestamp: new Date()
+        };
+        
+        // Добавяне на отговора на асистента към сесията
+        this.addMessage(assistantMessage);
+        return assistantMessage;
+      } else {
+        throw new Error('Невалиден отговор от API');
+      }
+    } catch (error) {
+      console.error('Грешка при комуникация с чатбот API:', error);
+      
+      // Добавяне на съобщение за грешка
+      const errorMessage: ChatMessage = {
+        role: 'assistant',
+        content: 'Извинете, възникна грешка при обработката на вашето запитване. Моля, опитайте отново по-късно.',
+        timestamp: new Date()
+      };
+      this.addMessage(errorMessage);
+      return errorMessage;
     }
-  ];
-};
+  }
 
-// Create a named object for export
-const chatbotService = {
-  processMessage,
-  saveChatHistory,
-  loadChatHistory
-};
+  // Подготовка на контекста за AI модела
+  private prepareContext(): any[] {
+    if (!this.session) {
+      return [{
+        role: 'system',
+        content: 'Ти си AI асистент на e-doc.bg, платформа за генериране на електронни документи, декларации и формуляри за български институции (НАП, НОИ, Общини). Помагаш на потребителите с въпроси относно данъци, осигуровки, счетоводство и административни процедури в България. Отговаряй на български език, освен ако изрично не бъдеш помолен за друго.'
+      }];
+    }
 
+    // Системно съобщение за контекст
+    const systemMessage = {
+      role: 'system',
+      content: 'Ти си AI асистент на e-doc.bg, платформа за генериране на електронни документи, декларации и формуляри за български институции (НАП, НОИ, Общини). Помагаш на потребителите с въпроси относно данъци, осигуровки, счетоводство и административни процедури в България. Отговаряй на български език, освен ако изрично не бъдеш помолен за друго.'
+    };
+
+    // Вземане на последните N съобщения за контекст (ограничаване на размера)
+    const maxContextMessages = 10;
+    const recentMessages = this.session.messages.slice(-maxContextMessages);
+
+    // Форматиране на съобщенията за API
+    const formattedMessages = recentMessages.map(msg => ({
+      role: msg.role,
+      content: msg.content
+    }));
+
+    // Връщане на пълния контекст
+    return [systemMessage, ...formattedMessages];
+  }
+
+  // Изчистване на текущата сесия
+  public clearSession(): void {
+    this.createNewSession();
+  }
+
+  // Връщане на всички съобщения от текущата сесия
+  public getMessages(): ChatMessage[] {
+    return this.session ? [...this.session.messages] : [];
+  }
+}
+
+// Експортиране на singleton инстанция
+const chatbotService = new ChatbotService();
 export default chatbotService;
